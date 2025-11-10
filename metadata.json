@@ -1,0 +1,5 @@
+{
+  "name": "Print Shop Production Tracker",
+  "description": "A simple internal web app for a digital printing company to record daily production, manage clients, and track stock inventory. It is designed to be tablet-friendly and work offline.",
+  "requestFramePermissions": []
+}
