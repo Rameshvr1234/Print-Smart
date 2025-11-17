@@ -279,8 +279,8 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
 
     const totalImpressions = useMemo(() => {
         return rows.reduce((total, row) => {
-            const wasteImpressions = (row.waste || 0) * (row.fb_qty > 0 ? 2 : 1);
-            return total + (row.ss_qty || 0) + ((row.fb_qty || 0) * 2) + wasteImpressions;
+            // Waste is always counted as impressions (not multiplied by print type)
+            return total + (row.ss_qty || 0) + ((row.fb_qty || 0) * 2) + (row.waste || 0);
         }, 0);
     }, [rows]);
     

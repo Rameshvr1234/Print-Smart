@@ -14,18 +14,223 @@
         extend: {
           colors: {
             brand: {
-              orange: '#f36f21',
-              blue: '#1d4ed8',
+              // Enhanced primary orange - vibrant and eye-catching
+              orange: {
+                50: '#fff7ed',
+                100: '#ffedd5',
+                200: '#fed7aa',
+                300: '#fdba74',
+                400: '#fb923c',
+                500: '#f36f21', // Main brand orange
+                600: '#ea580c',
+                700: '#c2410c',
+                800: '#9a3412',
+                900: '#7c2d12',
+              },
+              // Enhanced blue - professional and trustworthy
+              blue: {
+                50: '#eff6ff',
+                100: '#dbeafe',
+                200: '#bfdbfe',
+                300: '#93c5fd',
+                400: '#60a5fa',
+                500: '#3b82f6',
+                600: '#1d4ed8', // Main brand blue
+                700: '#1e40af',
+                800: '#1e3a8a',
+                900: '#1e293b',
+              },
+              // Accent colors for highlights
+              purple: {
+                500: '#8b5cf6',
+                600: '#7c3aed',
+              },
+              teal: {
+                500: '#14b8a6',
+                600: '#0d9488',
+              },
             },
-            'ui-background': '#f0f2f5',
+            // UI colors
+            'ui-background': '#f8fafc',
+            'ui-surface': '#ffffff',
+            'ui-border': '#e2e8f0',
+            // Status colors
+            success: {
+              light: '#d1fae5',
+              DEFAULT: '#10b981',
+              dark: '#065f46',
+            },
+            warning: {
+              light: '#fef3c7',
+              DEFAULT: '#f59e0b',
+              dark: '#92400e',
+            },
+            danger: {
+              light: '#fee2e2',
+              DEFAULT: '#ef4444',
+              dark: '#991b1b',
+            },
+            info: {
+              light: '#dbeafe',
+              DEFAULT: '#3b82f6',
+              dark: '#1e40af',
+            },
           },
           fontFamily: {
-            sans: ['Poppins', 'sans-serif'],
+            sans: ['Poppins', 'system-ui', 'sans-serif'],
+            display: ['Poppins', 'system-ui', 'sans-serif'],
+          },
+          fontSize: {
+            'xs': ['0.75rem', { lineHeight: '1rem' }],
+            'sm': ['0.875rem', { lineHeight: '1.25rem' }],
+            'base': ['1rem', { lineHeight: '1.5rem' }],
+            'lg': ['1.125rem', { lineHeight: '1.75rem' }],
+            'xl': ['1.25rem', { lineHeight: '1.75rem' }],
+            '2xl': ['1.5rem', { lineHeight: '2rem' }],
+            '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
+            '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
+            '5xl': ['3rem', { lineHeight: '1' }],
+          },
+          borderRadius: {
+            'sm': '0.375rem',
+            DEFAULT: '0.5rem',
+            'md': '0.625rem',
+            'lg': '0.75rem',
+            'xl': '1rem',
+            '2xl': '1.5rem',
+            '3xl': '2rem',
+          },
+          boxShadow: {
+            'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+            'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+            'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+            '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+            'inner': 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+            // Modern glass shadow
+            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+            // Elevated card shadow
+            'card': '0 4px 16px rgba(0, 0, 0, 0.08)',
+            'card-hover': '0 8px 24px rgba(0, 0 0 / 0.12)',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-in-out',
+            'slide-up': 'slideUp 0.4s ease-out',
+            'slide-down': 'slideDown 0.4s ease-out',
+            'scale-in': 'scaleIn 0.2s ease-out',
+            'bounce-subtle': 'bounceSubtle 0.5s ease-in-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(10px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            slideDown: {
+              '0%': { transform: 'translateY(-10px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.95)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+            bounceSubtle: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-4px)' },
+            },
+          },
+          backdropBlur: {
+            xs: '2px',
+            sm: '4px',
+            md: '8px',
+            lg: '12px',
+            xl: '16px',
           },
         }
       }
     }
   </script>
+  <style>
+    /* Modern global styles */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Smooth scroll behavior */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Modern gradient backgrounds */
+    .gradient-orange {
+      background: linear-gradient(135deg, #f36f21 0%, #ea580c 100%);
+    }
+
+    .gradient-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+
+    .gradient-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    }
+
+    .gradient-mesh {
+      background:
+        radial-gradient(at 0% 0%, rgba(243, 111, 33, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(20, 184, 166, 0.1) 0px, transparent 50%);
+    }
+
+    /* Glassmorphism effect */
+    .glass {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .glass-dark {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Smooth transitions */
+    .transition-smooth {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Focus visible for accessibility */
+    .focus-brand:focus-visible {
+      outline: 2px solid #f36f21;
+      outline-offset: 2px;
+    }
+  </style>
   <!-- jsPDF for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- jsPDF-AutoTable for creating tables in PDF -->
