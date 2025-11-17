@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ReportData } from '../types';
 import * as db from '../services/database';
 
@@ -12,7 +12,7 @@ const ReportsScreen: React.FC = () => {
     const [reportData, setReportData] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleGenerateReport = () => {
+    const handleGenerateReport = useCallback(() => {
         setLoading(true);
         try {
             const data = db.getReportData(startDate, endDate);
@@ -23,12 +23,11 @@ const ReportsScreen: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate]);
 
     useEffect(() => {
         handleGenerateReport();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [handleGenerateReport]);
     
     const exportToCSV = () => {
         if (!reportData || reportData.rows.length === 0) {

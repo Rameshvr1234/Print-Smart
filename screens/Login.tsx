@@ -12,6 +12,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // WARNING: Hardcoded credentials - FOR DEMO/DEVELOPMENT ONLY
+    // In production, implement proper authentication with backend API
+    // Default credentials: admin/admin, print01/print01, accounts/accounts
     if (username === 'admin' && password === 'admin') {
       onLogin('Admin');
     } else if (username === 'print01' && password === 'print01') {
