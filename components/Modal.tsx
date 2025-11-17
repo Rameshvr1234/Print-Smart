@@ -11,18 +11,37 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-full overflow-y-auto">
-        <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white">
-          <h2 className="text-2xl font-bold text-brand-blue">{title}</h2>
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="glass backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden border border-white/20 animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modern header */}
+        <div className="flex justify-between items-center p-5 md:p-6 border-b border-gray-200/50 bg-gradient-to-r from-white/80 to-white/60 sticky top-0 backdrop-blur-md z-10">
+          <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-brand-orange-500 to-brand-blue-600 bg-clip-text text-transparent">
+            {title}
+          </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-800"
+            className="text-gray-500 hover:text-brand-orange-500 p-2 rounded-xl hover:bg-white/50 transition-all duration-300 group"
+            aria-label="Close modal"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg
+              className="w-6 h-6 md:w-7 md:h-7 transition-transform group-hover:rotate-90"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-        <div className="p-6">
+
+        {/* Content area with scroll */}
+        <div className="p-5 md:p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
           {children}
         </div>
       </div>

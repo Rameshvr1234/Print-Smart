@@ -37,13 +37,25 @@ const App: React.FC = () => {
   };
 
   const UserInfo: React.FC = () => (
-    <div className="flex items-center gap-4">
-      <div className="text-right">
-        <p className="text-sm font-medium text-gray-500">Logged in as</p>
-        <p className="text-lg font-bold text-gray-800">{loggedInUserRole}</p>
+    <div className="flex items-center gap-3 md:gap-4">
+      <div className="hidden sm:flex items-center gap-3 bg-white/50 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-white/30 shadow-md">
+        <div className="w-8 h-8 rounded-lg gradient-blue flex items-center justify-center text-white font-bold text-sm">
+          {loggedInUserRole?.charAt(0)}
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-medium text-gray-500">Logged in as</p>
+          <p className="text-sm font-bold text-gray-800">{loggedInUserRole}</p>
+        </div>
       </div>
-      <button onClick={() => setLoggedInUserRole(null)} title="Logout" className="text-gray-500 hover:text-brand-orange p-2 rounded-full hover:bg-gray-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      <button
+        onClick={() => setLoggedInUserRole(null)}
+        title="Logout"
+        className="flex items-center gap-2 text-gray-600 hover:text-brand-orange-500 bg-white/50 hover:bg-white px-3 md:px-4 py-2.5 rounded-xl border border-white/30 hover:border-brand-orange-200 hover:shadow-md transition-all duration-300 group"
+      >
+        <svg className="w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        <span className="hidden md:inline text-sm font-semibold">Logout</span>
       </button>
     </div>
   );
@@ -63,71 +75,88 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-ui-background font-sans text-gray-800">
-      <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 className="text-3xl font-black text-brand-blue">Print Smart</h1>
+    <div className="min-h-screen bg-ui-background font-sans text-gray-800 gradient-mesh">
+      {/* Modern header with glassmorphism */}
+      <header className="glass sticky top-0 z-50 shadow-lg border-b border-white/20 animate-slide-down">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex justify-between items-center">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl gradient-orange flex items-center justify-center shadow-md">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-brand-orange-500 to-brand-blue-600 bg-clip-text text-transparent">
+                Print Smart
+              </h1>
+            </div>
+
+            {/* User info */}
             <UserInfo />
+          </div>
         </div>
       </header>
 
-      <div className="container mx-auto p-4 md:p-6 space-y-6 pb-24 md:pb-6">
-        {/* Mimicking the red banner from the image */}
-        <div className="bg-red-500 text-white p-4 rounded-lg shadow-lg text-center font-semibold">
-          <p>This is a demo application for internal production tracking.</p>
-        </div>
-
-        {/* Mimicking the "Your Address" block */}
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-lg font-semibold text-gray-500">Quick Look</h2>
-          <div className="flex items-center gap-4 mt-2">
-            <p className="text-5xl font-bold text-gray-800 tracking-wider">
-              Today's Dashboard
-            </p>
-          </div>
-          <p className="text-gray-600 mt-2">Key metrics will be displayed here in a future update.</p>
-        </div>
-
-        {/* Desktop Tab Navigation */}
-        <nav className="hidden md:flex bg-white p-2 rounded-lg shadow-lg items-center gap-2 overflow-x-auto">
-            {visibleScreens.map(item => (
-                <button
-                    key={item.screen}
-                    onClick={() => setActiveScreen(item.screen)}
-                    className={`flex items-center gap-2 px-5 py-3 text-lg font-bold rounded-lg transition-colors duration-200 whitespace-nowrap ${
-                        activeScreen === item.screen
-                        ? 'bg-brand-orange text-white shadow-md'
-                        : 'text-gray-600 hover:bg-orange-50'
-                    }`}
-                >
-                    {item.icon}
-                    <span>{item.screen}</span>
-                </button>
-            ))}
+      {/* Main content */}
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6 pb-24 md:pb-8 animate-fade-in">
+        {/* Desktop Tab Navigation with modern design */}
+        <nav className="hidden md:flex glass rounded-2xl p-2 shadow-card items-center gap-2 overflow-x-auto border border-white/20">
+          {visibleScreens.map(item => (
+            <button
+              key={item.screen}
+              onClick={() => setActiveScreen(item.screen)}
+              className={`flex items-center gap-2 px-5 py-3.5 text-base font-bold rounded-xl transition-all duration-300 whitespace-nowrap relative overflow-hidden group ${
+                activeScreen === item.screen
+                  ? 'gradient-orange text-white shadow-lg scale-105'
+                  : 'text-gray-700 hover:bg-white/50 hover:shadow-md'
+              }`}
+            >
+              <div className={`transition-transform duration-300 ${activeScreen === item.screen ? 'scale-110' : 'group-hover:scale-110'}`}>
+                {item.icon}
+              </div>
+              <span>{item.screen}</span>
+              {activeScreen === item.screen && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-full"></div>
+              )}
+            </button>
+          ))}
         </nav>
 
-        <main>
-            {renderScreen()}
+        {/* Main content area */}
+        <main className="animate-slide-up">
+          {renderScreen()}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around z-50">
+      {/* Modern Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/20 z-50 shadow-2xl">
+        <div className="flex justify-around">
           {visibleScreens.map(item => (
-              <button
-                  key={item.screen}
-                  onClick={() => setActiveScreen(item.screen)}
-                  className={`flex flex-col items-center justify-center gap-1 w-full p-2 transition-colors duration-200 ${
-                      activeScreen === item.screen
-                      ? 'text-brand-orange'
-                      : 'text-gray-500 hover:bg-orange-50'
-                  }`}
-                  aria-label={item.screen}
-              >
-                  {item.icon}
-                  <span className="text-xs font-medium">{item.screen}</span>
-              </button>
+            <button
+              key={item.screen}
+              onClick={() => setActiveScreen(item.screen)}
+              className={`flex flex-col items-center justify-center gap-1.5 w-full py-3 px-2 transition-all duration-300 relative ${
+                activeScreen === item.screen
+                  ? 'text-brand-orange-500'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              aria-label={item.screen}
+            >
+              <div className={`transition-all duration-300 ${activeScreen === item.screen ? 'scale-110' : ''}`}>
+                {item.icon}
+              </div>
+              <span className={`text-xs font-semibold transition-all duration-300 ${
+                activeScreen === item.screen ? 'text-brand-orange-500' : 'text-gray-600'
+              }`}>
+                {item.screen}
+              </span>
+              {activeScreen === item.screen && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 gradient-orange rounded-b-full"></div>
+              )}
+            </button>
           ))}
+        </div>
       </nav>
     </div>
   );
