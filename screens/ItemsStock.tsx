@@ -17,12 +17,14 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSave, onCancel }) => {
     name: item?.name || '',
     uom: item?.uom || '',
     reorder_level: item?.reorder_level || 0,
+    price: item?.price || 0,
   });
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'reorder_level' ? parseInt(value) || 0 : value }));
+    const isNumeric = name === 'reorder_level' || name === 'price';
+    setFormData(prev => ({ ...prev, [name]: isNumeric ? parseFloat(value) || 0 : value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,21 +51,27 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSave, onCancel }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">{error}</div>}
-      <div>
-        <label htmlFor="sku" className="block text-lg font-medium text-gray-700">SKU Code</label>
-        <input type="text" name="sku" id="sku" value={formData.sku} onChange={handleChange} required disabled={!!item} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100 text-lg" />
-      </div>
-      <div>
-        <label htmlFor="name" className="block text-lg font-medium text-gray-700">Item Name</label>
-        <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
-      </div>
-      <div>
-        <label htmlFor="uom" className="block text-lg font-medium text-gray-700">UOM (Unit of Measure)</label>
-        <input type="text" name="uom" id="uom" value={formData.uom} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
-      </div>
-       <div>
-        <label htmlFor="reorder_level" className="block text-lg font-medium text-gray-700">Reorder Level</label>
-        <input type="number" name="reorder_level" id="reorder_level" value={formData.reorder_level} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label htmlFor="sku" className="block text-lg font-medium text-gray-700">SKU Code</label>
+          <input type="text" name="sku" id="sku" value={formData.sku} onChange={handleChange} required disabled={!!item} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100 text-lg" />
+        </div>
+        <div>
+          <label htmlFor="name" className="block text-lg font-medium text-gray-700">Item Name</label>
+          <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
+        </div>
+        <div>
+          <label htmlFor="uom" className="block text-lg font-medium text-gray-700">UOM (Unit of Measure)</label>
+          <input type="text" name="uom" id="uom" value={formData.uom} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
+        </div>
+         <div>
+          <label htmlFor="price" className="block text-lg font-medium text-gray-700">Price / UOM</label>
+          <input type="number" step="0.01" name="price" id="price" value={formData.price} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
+        </div>
+        <div className="md:col-span-2">
+          <label htmlFor="reorder_level" className="block text-lg font-medium text-gray-700">Reorder Level</label>
+          <input type="number" name="reorder_level" id="reorder_level" value={formData.reorder_level} onChange={handleChange} required className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg" />
+        </div>
       </div>
       <div className="flex justify-end space-x-4 pt-4">
         <button type="button" onClick={onCancel} className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-lg font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
@@ -170,9 +178,8 @@ const ItemsStockScreen: React.FC = () => {
   };
   
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-4xl font-bold text-brand-blue">Items / Stock</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg shadow-lg">
         <div className="flex items-center gap-4 w-full md:w-auto">
           <input
             type="text"
@@ -181,14 +188,14 @@ const ItemsStockScreen: React.FC = () => {
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full md:w-80 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-lg"
           />
-          <button
-            onClick={() => handleOpenItemModal()}
-            className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90 whitespace-nowrap"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Add New SKU
-          </button>
         </div>
+        <button
+          onClick={() => handleOpenItemModal()}
+          className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90 whitespace-nowrap"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add New SKU
+        </button>
       </div>
 
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -198,6 +205,7 @@ const ItemsStockScreen: React.FC = () => {
               <tr>
                 <th className="px-6 py-4 text-left font-semibold text-gray-600">SKU</th>
                 <th className="px-6 py-4 text-left font-semibold text-gray-600">Item Name</th>
+                <th className="px-6 py-4 text-left font-semibold text-gray-600">Price</th>
                 <th className="px-6 py-4 text-left font-semibold text-gray-600">Current Stock</th>
                 <th className="px-6 py-4 text-left font-semibold text-gray-600">Reorder Level</th>
                 <th className="px-6 py-4 text-left font-semibold text-gray-600">Actions</th>
@@ -210,6 +218,9 @@ const ItemsStockScreen: React.FC = () => {
                   <tr key={item.sku} className={`align-middle ${isLowStock ? 'bg-red-50' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-gray-700">{item.sku}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{item.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-mono">
+                      {item.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
+                    </td>
                     <td className={`px-6 py-4 whitespace-nowrap font-bold ${isLowStock ? 'text-red-600' : 'text-gray-700'}`}>
                       {item.stock_qty} {item.uom}
                     </td>

@@ -65,9 +65,7 @@ const ReportsScreen: React.FC = () => {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6">
-            <h1 className="text-4xl font-bold text-brand-blue">Reports</h1>
-
+        <div className="space-y-6">
             {/* Filters */}
             <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col md:flex-row items-center md:items-end gap-6">
                 <div>

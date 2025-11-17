@@ -12,6 +12,7 @@ export interface Item {
   uom: string;
   stock_qty: number;
   reorder_level: number;
+  price: number;
 }
 
 export interface DailyHeader {
@@ -35,9 +36,11 @@ export interface DailyRow {
   fb_qty: number; // Front-and-back quantity
   finishing: number;
   waste: number;
+  is_billed: boolean;
+  bill_no: string | null;
 }
 
-export type DailyRowInput = Omit<DailyRow, 'id' | 'header_id' | 'serial_no'>;
+export type DailyRowInput = Omit<DailyRow, 'id' | 'header_id' | 'serial_no' | 'is_billed' | 'bill_no'>;
 
 export interface ReportData {
   rows: (DailyRow & { client_name: string; material_name: string; date: string; })[];
@@ -47,4 +50,4 @@ export interface ReportData {
   topClients: { client_name: string, job_count: number }[];
 }
 
-export type UserRole = 'Admin' | 'Designer';
+export type UserRole = 'Admin' | 'Designer' | 'Accounts';

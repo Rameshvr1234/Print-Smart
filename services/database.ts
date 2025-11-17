@@ -26,10 +26,10 @@ const initDatabase = () => {
   }
   if (!localStorage.getItem('items')) {
     set<Item[]>('items', [
-        { sku: 'PAP-001', name: 'A4 Paper 80gsm', uom: 'sheets', stock_qty: 5000, reorder_level: 1000 },
-        { sku: 'BRD-001', name: 'Art Board 300gsm', uom: 'sheets', stock_qty: 2000, reorder_level: 500 },
-        { sku: 'STK-001', name: 'Glossy Sticker A4', uom: 'sheets', stock_qty: 1500, reorder_level: 300 },
-        { sku: 'PVC-001', name: 'PVC Sticker', uom: 'sheets', stock_qty: 1000, reorder_level: 200 },
+        { sku: 'PAP-001', name: 'A4 Paper 80gsm', uom: 'sheets', stock_qty: 5000, reorder_level: 1000, price: 2 },
+        { sku: 'BRD-001', name: 'Art Board 300gsm', uom: 'sheets', stock_qty: 2000, reorder_level: 500, price: 10 },
+        { sku: 'STK-001', name: 'Glossy Sticker A4', uom: 'sheets', stock_qty: 1500, reorder_level: 300, price: 15 },
+        { sku: 'PVC-001', name: 'PVC Sticker', uom: 'sheets', stock_qty: 1000, reorder_level: 200, price: 25 },
     ]);
   }
   if (!localStorage.getItem('daily_headers')) {
@@ -98,52 +98,73 @@ export const updateItem = (updatedItem: Item): Item => {
 // POST /daily
 export const saveDailyEntry = (headerData: Omit<DailyHeader, 'id'>, rowsData: DailyRowInput[]) => {
     const headers = get<DailyHeader[]>('daily_headers', []);
-    const rows = get<DailyRow[]>('daily_rows', []);
+    const allRows = get<DailyRow[]>('daily_rows', []);
+    const items = getItems();
 
-    // Check if a header for this date already exists and remove its old rows
     const existingHeaderIndex = headers.findIndex(h => h.date === headerData.date);
-    let newHeaderId;
+    let headerId: number;
+
+    // Create a mutable copy of items to work with, and a map for easy lookup
+    const itemsToUpdate = JSON.parse(JSON.stringify(items)) as Item[];
+    const itemMap = new Map(itemsToUpdate.map(i => [i.sku, i]));
 
     if (existingHeaderIndex > -1) {
-        newHeaderId = headers[existingHeaderIndex].id;
-        // Update header
+        // --- UPDATE EXISTING ENTRY ---
+        headerId = headers[existingHeaderIndex].id;
         headers[existingHeaderIndex] = { ...headers[existingHeaderIndex], ...headerData };
-        // Filter out old rows associated with this header
-        const updatedRows = rows.filter(r => r.header_id !== newHeaderId);
-        set('daily_rows', updatedRows);
+        
+        const oldRows = allRows.filter(r => r.header_id === headerId);
+
+        // 1. Revert old stock usage by adding it back to inventory
+        oldRows.forEach(row => {
+            const item = itemMap.get(row.material_sku);
+            if (item) {
+                const totalUsed = row.ss_qty + row.fb_qty + row.waste;
+                item.stock_qty += totalUsed;
+            }
+        });
+
+        // 2. Apply new stock usage by deducting it from inventory
+        rowsData.forEach(row => {
+            const item = itemMap.get(row.material_sku);
+            if(item) {
+                const totalUsed = row.ss_qty + row.fb_qty + row.waste;
+                item.stock_qty -= totalUsed;
+            }
+        });
 
     } else {
-        newHeaderId = getNextId('daily_header_id_counter');
-        const newHeader: DailyHeader = { ...headerData, id: newHeaderId };
+        // --- CREATE NEW ENTRY ---
+        headerId = getNextId('daily_header_id_counter');
+        const newHeader: DailyHeader = { ...headerData, id: headerId };
         headers.push(newHeader);
+        
+        // Deduct stock for the new entry
+        rowsData.forEach(row => {
+            const item = itemMap.get(row.material_sku);
+            if(item) {
+                const totalUsed = row.ss_qty + row.fb_qty + row.waste;
+                item.stock_qty -= totalUsed;
+            }
+        });
     }
 
-    const currentRows = get<DailyRow[]>('daily_rows', []);
-    const newRows: DailyRow[] = rowsData.map((rowData, index) => ({
+    // Save the updated stock quantities
+    set('items', itemsToUpdate);
+
+    // --- REPLACE ROWS FOR THE DAY & SAVE ---
+    const otherDaysRows = allRows.filter(r => r.header_id !== headerId);
+    const newRowsForDay: DailyRow[] = rowsData.map((rowData, index) => ({
         ...rowData,
         id: getNextId('daily_row_id_counter'),
-        header_id: newHeaderId,
+        header_id: headerId,
         serial_no: index + 1,
+        is_billed: false,
+        bill_no: null,
     }));
-    
-    set('daily_headers', headers);
-    set('daily_rows', [...currentRows, ...newRows]);
 
-    // Deduct stock based on material usage
-    const items = getItems();
-    const itemUsage = new Map<string, number>();
-    newRows.forEach(row => {
-        const totalUsed = row.ss_qty + row.fb_qty + row.waste; // Assuming waste is also from the same material
-        itemUsage.set(row.material_sku, (itemUsage.get(row.material_sku) || 0) + totalUsed);
-    });
-    
-    const updatedItems = items.map(item => {
-        if(itemUsage.has(item.sku)) {
-            return { ...item, stock_qty: item.stock_qty - (itemUsage.get(item.sku) as number) };
-        }
-        return item;
-    });
-    set('items', updatedItems);
+    set('daily_headers', headers);
+    set('daily_rows', [...otherDaysRows, ...newRowsForDay]);
 };
 
 
@@ -156,6 +177,15 @@ export const getDailyEntry = (date: string): { header: DailyHeader | null, rows:
     const rows = get<DailyRow[]>('daily_rows', []).filter(r => r.header_id === header.id);
     return { header, rows };
 };
+
+export const getLatestHeaderBefore = (date: string): DailyHeader | null => {
+    const headers = get<DailyHeader[]>('daily_headers', []);
+    const previousHeaders = headers
+        .filter(h => h.date < date)
+        .sort((a, b) => b.date.localeCompare(a.date)); // Sort descending by date
+    
+    return previousHeaders.length > 0 ? previousHeaders[0] : null;
+}
 
 
 // GET /report?start=YYYY-MM-DD&end=YYYY-MM-DD
@@ -202,4 +232,40 @@ export const getReportData = (startDate: string, endDate: string): ReportData =>
         }));
     
     return { rows, totalProductionValue, totalImpressions, totalWaste, topClients };
+};
+
+// GET /accounts/jobs
+export const getFinalizedJobs = (): (DailyRow & { client_name: string; date: string; material_name: string; })[] => {
+    const headers = get<DailyHeader[]>('daily_headers', []);
+    const allRows = get<DailyRow[]>('daily_rows', []);
+    const allClients = getClients();
+    const allItems = getItems();
+
+    const clientMap = new Map(allClients.map(c => [c.id, c.name]));
+    const itemMap = new Map(allItems.map(i => [i.sku, i.name]));
+    const headerMap = new Map(headers.map(h => [h.id, h.date]));
+    
+    const jobs = allRows.map(row => ({
+        ...row,
+        client_name: clientMap.get(row.client_id) || 'Unknown Client',
+        material_name: itemMap.get(row.material_sku) || 'Unknown Material',
+        date: headerMap.get(row.header_id) || 'Unknown Date',
+    }));
+
+    // Only return jobs that have a valid, finalized header
+    return jobs.filter(job => job.date !== 'Unknown Date');
+};
+
+// PATCH /accounts/jobs/:id
+export const updateBillingInfo = (rowId: number, isBilled: boolean, billNo: string | null): void => {
+    const allRows = get<DailyRow[]>('daily_rows', []);
+    const rowIndex = allRows.findIndex(r => r.id === rowId);
+
+    if (rowIndex > -1) {
+        allRows[rowIndex].is_billed = isBilled;
+        allRows[rowIndex].bill_no = billNo?.trim() ? billNo.trim() : null;
+        set('daily_rows', allRows);
+    } else {
+        console.error('Daily row not found for billing update:', rowId);
+    }
 };

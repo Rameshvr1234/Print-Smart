@@ -5,6 +5,8 @@ export enum Screen {
   Clients = 'Clients',
   ItemsStock = 'Items / Stock',
   Reports = 'Reports',
+  Accounts = 'Accounts',
+  Dashboard = 'Dashboard',
 }
 
 export const DAILY_ROW_NUMERIC_FIELDS: (keyof Omit<DailyRowInput, 'material_sku' | 'job_reference' | 'client_id'>)[] = [
@@ -18,3 +20,5 @@ export const DAILY_ROW_COLUMNS: {key: keyof DailyRowInput, label: string}[] = [
     { key: 'finishing', label: 'Finishing' },
     { key: 'waste', label: 'Waste' },
 ];
+
+export const CLICK_CHARGE = 3.65 * 1.18; // 3.65 + 18% tax

@@ -36,7 +36,9 @@ const DailyRowFormModal: React.FC<{
     clients: Client[];
     items: Item[];
     userRole: UserRole;
-}> = ({ isOpen, onClose, onSave, onDelete, rowData, rowIndex, clients, items, userRole }) => {
+    canDelete: boolean;
+    isLocked: boolean;
+}> = ({ isOpen, onClose, onSave, onDelete, rowData, rowIndex, clients, items, userRole, canDelete, isLocked }) => {
     
     const [formState, setFormState] = useState<DailyRowInput>({
         client_id: 0, job_reference: '', designing_charges: 0, material_sku: '',
@@ -46,7 +48,7 @@ const DailyRowFormModal: React.FC<{
     useEffect(() => {
         const initialData = rowData || {
             client_id: clients[0]?.id || 0,
-            job_reference: '', // This will be set on save for new items
+            job_reference: '', 
             designing_charges: 0,
             material_sku: items[0]?.sku || '',
             ss_qty: 0,
@@ -79,13 +81,24 @@ const DailyRowFormModal: React.FC<{
             <form onSubmit={handleSave} className="space-y-5">
                 <div>
                     <label className="block text-sm font-medium text-gray-600">Client Name</label>
-                    <select value={formState.client_id} onChange={e => handleChange('client_id', Number(e.target.value))} className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white">
+                    <select value={formState.client_id} onChange={e => handleChange('client_id', Number(e.target.value))} disabled={isLocked} className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
                         {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-600">Job Reference</label>
+                    <input 
+                        type="text" 
+                        value={formState.job_reference} 
+                        onChange={e => handleChange('job_reference', e.target.value)} 
+                        disabled={isLocked}
+                        placeholder="e.g., Prime Graphics Rs. 5 sticker"
+                        className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                    />
+                </div>
                  <div>
                     <label className="block text-sm font-medium text-gray-600">Material</label>
-                    <select value={formState.material_sku} onChange={e => handleChange('material_sku', e.target.value)} className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white">
+                    <select value={formState.material_sku} onChange={e => handleChange('material_sku', e.target.value)} disabled={isLocked} className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
                         {items.map(i => <option key={i.sku} value={i.sku}>{i.name}</option>)}
                     </select>
                 </div>
@@ -93,19 +106,19 @@ const DailyRowFormModal: React.FC<{
                     {DAILY_ROW_COLUMNS.map(c => (
                         <div key={c.key}>
                             <label className="block text-sm font-medium text-gray-600">{c.label}</label>
-                            <input type="number" min="0" value={formState[c.key as keyof DailyRowInput]} onChange={e => handleChange(c.key as keyof DailyRowInput, Number(e.target.value))} className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white" />
+                            <input type="number" min="0" value={formState[c.key as keyof DailyRowInput]} onChange={e => handleChange(c.key as keyof DailyRowInput, Number(e.target.value))} disabled={isLocked} className="w-full mt-1 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" />
                         </div>
                     ))}
                 </div>
                 <div className="flex justify-between items-center pt-4">
                     <div>
-                        {rowData && userRole === 'Admin' && (
+                        {rowData && canDelete && (
                              <button type="button" onClick={handleDelete} className="px-6 py-3 text-lg font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200">Delete</button>
                         )}
                     </div>
                     <div className="flex justify-end space-x-3">
                          <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-lg font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
-                        <button type="submit" className="px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90">Save</button>
+                        <button type="submit" disabled={isLocked} className="px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed">Save</button>
                     </div>
                 </div>
             </form>
@@ -122,13 +135,15 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
     const [clients, setClients] = useState<Client[]>([]);
     const [items, setItems] = useState<Item[]>([]);
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-    const [machineStartReading, setMachineStartReading] = useState(0);
-    const [machineEndReading, setMachineEndReading] = useState(0);
+    const [startReading, setStartReading] = useState(0);
+    const [isDaySaved, setIsDaySaved] = useState(false);
+    const [isFinalizeModalOpen, setIsFinalizeModalOpen] = useState(false);
 
     // State for the new mobile row form modal
     const [isRowModalOpen, setIsRowModalOpen] = useState(false);
     const [editingRow, setEditingRow] = useState<{ row: DailyRowInput; index: number } | null>(null);
 
+    const isLocked = isDaySaved && userRole !== 'Admin';
 
     const fetchClientsAndItems = useCallback(() => {
         setClients(db.getClients().filter(c => c.is_active));
@@ -149,16 +164,53 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
         
         const entry = db.getDailyEntry(date);
         if (entry.header) {
+            // Day is already saved, load its data
+            setStartReading(entry.header.machine_start_reading);
             const loadedRows = entry.rows.map(({id, header_id, serial_no, ...rest}) => rest);
             setRows(loadedRows);
-            setMachineStartReading(entry.header.machine_start_reading || 0);
-            setMachineEndReading(entry.header.machine_end_reading || 0);
+            setIsDaySaved(true);
         } else {
-            setRows([]);
-            setMachineStartReading(0);
-            setMachineEndReading(0);
+            // Check for draft
+            const draftKey = `daily_entry_draft_${date}`;
+            const draftJson = localStorage.getItem(draftKey);
+            let loadedDraft = false;
+            
+            if (draftJson) {
+                try {
+                    const draft = JSON.parse(draftJson);
+                    // Extra safety check on structure
+                    if (Array.isArray(draft.rows)) {
+                        setStartReading(draft.startReading || 0);
+                        setRows(draft.rows);
+                        setIsDaySaved(false);
+                        loadedDraft = true;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse draft", e);
+                }
+            }
+
+            if (!loadedDraft) {
+                // New entry for this day
+                const latestHeader = db.getLatestHeaderBefore(date);
+                setStartReading(latestHeader?.machine_end_reading || 0);
+                setRows([]);
+                setIsDaySaved(false);
+            }
         }
     }, [date]);
+
+    // Auto-save draft effect
+    useEffect(() => {
+        const draftKey = `daily_entry_draft_${date}`;
+        if (!isDaySaved) {
+            const draft = { rows, startReading };
+            localStorage.setItem(draftKey, JSON.stringify(draft));
+        } else {
+            // If day is saved, ensure no draft exists
+            localStorage.removeItem(draftKey);
+        }
+    }, [rows, startReading, date, isDaySaved]);
 
     useEffect(() => {
         fetchClientsAndItems();
@@ -168,7 +220,7 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
     const addRow = () => {
         const newRow: DailyRowInput = {
             client_id: clients[0]?.id || 0,
-            job_reference: generateJobReference(date, rows.length),
+            job_reference: '',
             designing_charges: 0,
             material_sku: items[0]?.sku || '',
             ss_qty: 0,
@@ -180,11 +232,7 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
     };
     
     const removeRow = (index: number) => {
-        const updatedRows = rows.filter((_, i) => i !== index)
-            .map((row, i) => ({
-                ...row,
-                job_reference: generateJobReference(date, i)
-            }));
+        const updatedRows = rows.filter((_, i) => i !== index);
         setRows(updatedRows);
     };
 
@@ -215,8 +263,7 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
             updatedRows = [...rows];
             updatedRows[editingRow.index] = newRowData;
         } else { // Adding new row
-            const jobRef = generateJobReference(date, rows.length);
-            updatedRows = [...rows, { ...newRowData, job_reference: jobRef }];
+            updatedRows = [...rows, newRowData];
         }
         setRows(updatedRows);
         handleCloseModal();
@@ -232,25 +279,16 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
 
     const totalImpressions = useMemo(() => {
         return rows.reduce((total, row) => {
-            return total + (row.ss_qty || 0) + ((row.fb_qty || 0) * 2) + (row.waste || 0);
+            const wasteImpressions = (row.waste || 0) * (row.fb_qty > 0 ? 2 : 1);
+            return total + (row.ss_qty || 0) + ((row.fb_qty || 0) * 2) + wasteImpressions;
         }, 0);
     }, [rows]);
     
+    const machineEndReading = startReading + totalImpressions;
+
     const machineProduction = useMemo(() => {
-        return Math.max(0, machineEndReading - machineStartReading);
-    }, [machineStartReading, machineEndReading]);
-
-    const impressionsMatch = useMemo(() => {
-        return machineProduction === totalImpressions;
-    }, [machineProduction, totalImpressions]);
-
-    const matchStatus = useMemo(() => {
-        if (totalImpressions > 0 || machineProduction > 0) {
-            return impressionsMatch ? 'match' : 'mismatch';
-        }
-        return 'idle';
-    }, [impressionsMatch, totalImpressions, machineProduction]);
-
+        return Math.max(0, machineEndReading - startReading);
+    }, [startReading, machineEndReading]);
 
     const columnTotals = useMemo(() => {
         const totals: { [key: string]: number } = {};
@@ -270,19 +308,23 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
             return;
         }
 
-        if (totalImpressions > 0 && machineEndReading <= machineStartReading) {
-            alert('Machine end reading must be greater than start reading when there is production.');
-            return;
-        }
-        
-        if (!impressionsMatch) {
-            alert(`Impressions count does not match machine reading.\nMachine Production: ${machineProduction}\nTotal Impressions from jobs: ${totalImpressions}`);
-            return;
-        }
-
-        const headerData = { date, day_name: day, total_impressions: totalImpressions, machine_start_reading: machineStartReading, machine_end_reading: machineEndReading };
+        const headerData = { date, day_name: day, total_impressions: totalImpressions, machine_start_reading: startReading, machine_end_reading: machineEndReading };
         db.saveDailyEntry(headerData, rows);
-        alert('Day saved successfully!');
+        
+        // Clear draft after successful save
+        localStorage.removeItem(`daily_entry_draft_${date}`);
+
+        setIsDaySaved(true);
+        setIsFinalizeModalOpen(true);
+        fetchClientsAndItems(); // Refetch items to get updated stock
+    };
+
+    const handleGoToNextDay = () => {
+        const currentDate = new Date(date + 'T00:00:00');
+        currentDate.setDate(currentDate.getDate() + 1);
+        const nextDayISO = currentDate.toISOString().split('T')[0];
+        setDate(nextDayISO);
+        setIsFinalizeModalOpen(false);
     };
     
     const handleQuickClientAdd = (newClient: Client) => {
@@ -290,7 +332,7 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
         setIsClientModalOpen(false);
         const newRow: DailyRowInput = {
             client_id: newClient.id,
-            job_reference: generateJobReference(date, rows.length),
+            job_reference: '',
             designing_charges: 0, material_sku: items[0]?.sku || '', ss_qty: 0, fb_qty: 0,
             finishing: 0, waste: 0,
         };
@@ -309,12 +351,12 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
         const clientMap = new Map(clients.map(c => [c.id, c.name]));
         const itemMap = new Map(items.map(i => [i.sku, i.name]));
 
-        const headers = ['No.', 'Client Name', 'Job Reference', 'Material', ...DAILY_ROW_COLUMNS.map(c => c.label)];
+        const headers = ['Job No.', 'Client Name', 'Job Reference', 'Material', ...DAILY_ROW_COLUMNS.map(c => c.label)];
         
         const csvRows = [
             headers.join(','),
             ...rows.map((row, index) => [
-                index + 1,
+                generateJobReference(date, index),
                 `"${clientMap.get(row.client_id) || ''}"`,
                 `"${row.job_reference}"`,
                 `"${itemMap.get(row.material_sku) || ''}"`,
@@ -346,11 +388,11 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
         doc.text(`Daily Production - ${date} (${day})`, 14, 20);
         doc.setFontSize(12);
         doc.text(`Total Impressions: ${totalImpressions}`, 14, 30);
-        doc.text(`Machine Readings: ${machineStartReading} - ${machineEndReading}`, 14, 36);
+        doc.text(`Machine Readings: ${startReading} - ${machineEndReading}`, 14, 36);
 
-        const tableColumn = ['#', 'Client', 'Job Ref', 'Material', 'Design Charges', 'SS Qty', 'F&B Qty', 'Finishing', 'Waste'];
+        const tableColumn = ['Job No.', 'Client', 'Job Ref', 'Material', 'Design Charges', 'SS Qty', 'F&B Qty', 'Finishing', 'Waste'];
         const tableRows = rows.map((row, index) => [
-            index + 1,
+            generateJobReference(date, index),
             clientMap.get(row.client_id) || '',
             row.job_reference,
             itemMap.get(row.material_sku) || '',
@@ -382,46 +424,59 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
 
         doc.save(`daily_entry_${date}.pdf`);
     };
-    
-    const getBorderStyle = () => {
-        switch (matchStatus) {
-            case 'match': return 'border-green-500';
-            case 'mismatch': return 'border-red-500';
-            default: return 'border-gray-300';
-        }
-    };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-40 md:pb-8">
-            <h1 className="text-4xl font-bold text-brand-blue hidden md:block">Daily Entry</h1>
+        <div className="space-y-6">
+            <div className="bg-white p-4 rounded-lg shadow-lg flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                    <button onClick={addRow} disabled={isLocked} className="hidden md:flex items-center justify-center gap-2 px-6 py-3 border-2 border-brand-orange rounded-md text-lg font-medium text-brand-orange hover:bg-orange-50 disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed">
+                        + Add Row
+                    </button>
+                    <button onClick={handleOpenAddModal} disabled={isLocked} className="md:hidden flex items-center justify-center gap-2 px-6 py-3 bg-brand-orange rounded-md text-lg font-medium text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        + Add Job
+                    </button>
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                    <button onClick={() => handleExport('pdf')} className="px-6 py-3 text-lg font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Export PDF</button>
+                    <button onClick={() => handleExport('csv')} className="px-6 py-3 text-lg font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Export CSV</button>
+                    <button onClick={handleSave} disabled={isLocked} className={`px-10 py-3 text-lg font-bold text-white rounded-md shadow-md ${isLocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-orange hover:bg-opacity-90'}`}>
+                        {isDaySaved ? 'Day Finalized' : 'Finalize & Close Day'}
+                    </button>
+                </div>
+            </div>
             
             {/* Header Form */}
             <div className="bg-white p-6 rounded-lg shadow-lg grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-end">
                 <div>
                     <label className="block text-md font-semibold text-gray-700 mb-1">Date</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-md text-lg text-black bg-white" />
+                    <input type="date" value={date} onChange={e => setDate(e.target.value)} disabled={isLocked} className="w-full px-4 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" />
                 </div>
                 <div>
                     <label className="block text-md font-semibold text-gray-700 mb-1">Day</label>
                     <input type="text" value={day} readOnly className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-lg text-black" />
                 </div>
-                <div>
-                    <label className="block text-md font-semibold text-gray-700 mb-1">Start Reading</label>
-                    <input type="number" value={machineStartReading} onChange={e => setMachineStartReading(Number(e.target.value))} min="0" className="w-full px-4 py-3 border border-gray-300 rounded-md text-lg text-black bg-white" />
-                </div>
-                <div>
-                    <label className="block text-md font-semibold text-gray-700 mb-1">End Reading</label>
-                    <input type="number" value={machineEndReading} onChange={e => setMachineEndReading(Number(e.target.value))} min="0" className="w-full px-4 py-3 border border-gray-300 rounded-md text-lg text-black bg-white" />
-                </div>
                  <div className="relative">
                     <label className="block text-md font-semibold text-gray-700 mb-1">Machine Production</label>
-                    <input type="number" value={machineProduction} readOnly className={`w-full px-4 py-3 border-2 rounded-md bg-gray-100 text-lg font-bold text-black ${getBorderStyle()}`} />
+                    <input type="number" value={machineProduction} readOnly className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-lg font-bold text-black" />
                 </div>
                 <div className="relative">
                     <label className="block text-md font-semibold text-gray-700 mb-1">Total Impressions</label>
-                    <input type="number" value={totalImpressions} readOnly className={`w-full px-4 py-3 border-2 rounded-md bg-gray-100 text-lg font-bold text-black ${getBorderStyle()}`} />
-                    {matchStatus === 'match' && <div className="absolute -bottom-5 left-0 text-sm text-green-600 font-semibold">✓ Counts Match</div>}
-                    {matchStatus === 'mismatch' && <div className="absolute -bottom-5 left-0 text-sm text-red-600 font-semibold">✗ Mismatch!</div>}
+                    <input type="number" value={totalImpressions} readOnly className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-lg font-bold text-black" />
+                </div>
+                 <div>
+                    <label className="block text-md font-semibold text-gray-700 mb-1">Start Reading</label>
+                    <input 
+                       type="number" 
+                       value={startReading} 
+                       onChange={e => setStartReading(Number(e.target.value))} 
+                       disabled={isLocked}
+                       min="0" 
+                       className="w-full px-4 py-3 border border-gray-300 rounded-md text-lg text-black disabled:bg-gray-100 disabled:cursor-not-allowed bg-white" 
+                    />
+                </div>
+                <div>
+                    <label className="block text-md font-semibold text-gray-700 mb-1">End Reading</label>
+                    <input type="number" value={machineEndReading} readOnly min="0" className="w-full px-4 py-3 border border-gray-300 rounded-md bg-gray-100 text-lg text-black" />
                 </div>
             </div>
 
@@ -431,44 +486,56 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                     <table className="w-full text-lg whitespace-nowrap">
                         <thead className="bg-gray-100 sticky top-0 z-10">
                             <tr>
-                                <th className="p-3 text-left font-semibold text-gray-600">No.</th>
+                                <th className="p-3 text-left font-semibold text-gray-600">Job No.</th>
                                 <th className="p-3 text-left font-semibold text-gray-600">Client Name</th>
                                 <th className="p-3 text-left font-semibold text-gray-600">Job Reference</th>
                                 <th className="p-3 text-left font-semibold text-gray-600">Material</th>
                                 {DAILY_ROW_COLUMNS.map(c => <th key={c.key} className="p-3 text-left font-semibold text-gray-600">{c.label}</th>)}
-                                {userRole === 'Admin' && <th className="p-3 text-left font-semibold text-gray-600">Action</th>}
+                                <th className="p-3 text-left font-semibold text-gray-600">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                            {rows.map((row, index) => (
                                <tr key={index} className="align-middle">
-                                   <td className="p-2">{index + 1}</td>
+                                   <td className="p-2 font-mono">{generateJobReference(date, index)}</td>
                                    <td className="p-2 min-w-[250px]">
                                        <div className="flex items-center gap-2">
-                                           <select value={row.client_id} onChange={e => handleRowChange(index, 'client_id', Number(e.target.value))} className="w-full px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white">
+                                           <select value={row.client_id} disabled={isLocked} onChange={e => handleRowChange(index, 'client_id', Number(e.target.value))} className="w-full px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
                                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                            </select>
-                                           <button onClick={() => setIsClientModalOpen(true)} className="p-2 bg-gray-200 rounded-md hover:bg-gray-300 text-lg font-bold text-black">+</button>
+                                           <button onClick={() => setIsClientModalOpen(true)} disabled={isLocked} className="p-2 bg-gray-200 rounded-md hover:bg-gray-300 text-lg font-bold text-black disabled:bg-gray-100 disabled:cursor-not-allowed">+</button>
                                        </div>
                                    </td>
-                                   <td className="p-2"><input type="text" value={row.job_reference} readOnly className="w-full px-2 py-3 border border-gray-300 rounded-md text-lg bg-gray-100 text-black" /></td>
                                    <td className="p-2 min-w-[250px]">
-                                       <select value={row.material_sku} onChange={e => handleRowChange(index, 'material_sku', e.target.value)} className="w-full px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white">
+                                        <input 
+                                            type="text" 
+                                            value={row.job_reference} 
+                                            onChange={e => handleRowChange(index, 'job_reference', e.target.value)}
+                                            disabled={isLocked}
+                                            className="w-full px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            placeholder="Enter job details..."
+                                        />
+                                   </td>
+                                   <td className="p-2 min-w-[250px]">
+                                       <select value={row.material_sku} disabled={isLocked} onChange={e => handleRowChange(index, 'material_sku', e.target.value)} className="w-full px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
                                             {items.map(i => <option key={i.sku} value={i.sku}>{i.name}</option>)}
                                        </select>
                                    </td>
                                    {DAILY_ROW_COLUMNS.map(c => (
                                        <td key={c.key} className="p-2">
-                                           <input type="number" min="0" value={row[c.key as keyof DailyRowInput]} onChange={e => handleRowChange(index, c.key as keyof DailyRowInput, Number(e.target.value))} className="w-32 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white" />
+                                           <input type="number" min="0" value={row[c.key as keyof DailyRowInput]} disabled={isLocked} onChange={e => handleRowChange(index, c.key as keyof DailyRowInput, Number(e.target.value))} className="w-32 px-2 py-3 border border-gray-300 rounded-md text-lg text-black bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" />
                                        </td>
                                    ))}
-                                   {userRole === 'Admin' && 
                                    <td className="p-2">
-                                       <button onClick={() => removeRow(index)} className="text-red-500 hover:text-red-700 p-2">
-                                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                       </button>
+                                       <div className="flex items-center gap-2">
+                                           <button onClick={handleSave} disabled={isLocked} title="Save Changes" className="text-green-600 hover:text-green-800 p-2 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                           </button>
+                                           <button onClick={() => removeRow(index)} disabled={isLocked} title="Delete Row" className="text-red-500 hover:text-red-700 p-2 disabled:text-gray-400 disabled:cursor-not-allowed">
+                                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                           </button>
+                                       </div>
                                    </td>
-                                   }
                                </tr>
                            ))}
                         </tbody>
@@ -478,7 +545,7 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                                 {DAILY_ROW_COLUMNS.map(c => (
                                     <td key={c.key} className="p-3 text-gray-900">{columnTotals[c.key as keyof DailyRowInput] ?? 0}</td>
                                 ))}
-                                {userRole === 'Admin' && <td className="p-3"></td>}
+                                <td className="p-3"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -488,10 +555,10 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
             {/* NEW Compact List for Mobile */}
             <div className="block md:hidden space-y-3">
                 {rows.map((row, index) => (
-                    <div key={index} onClick={() => handleOpenEditModal(index)} className="bg-white p-3 rounded-lg shadow flex justify-between items-center cursor-pointer active:bg-gray-100">
+                    <div key={index} onClick={() => !isLocked && handleOpenEditModal(index)} className={`bg-white p-3 rounded-lg shadow flex justify-between items-center ${isLocked ? 'cursor-default' : 'cursor-pointer active:bg-gray-100'}`}>
                         <div className="flex-1 overflow-hidden">
-                            <p className="font-bold text-gray-800 truncate">#{index + 1} - {clients.find(c => c.id === row.client_id)?.name || 'N/A'}</p>
-                            <p className="text-sm text-gray-500">{row.job_reference}</p>
+                            <p className="font-bold text-gray-800 truncate">#{generateJobReference(date, index)} - {clients.find(c => c.id === row.client_id)?.name || 'N/A'}</p>
+                            <p className="text-sm text-gray-500 truncate">{row.job_reference || 'No details'}</p>
                         </div>
                         <div className="text-right ml-2">
                            <p className="font-semibold text-gray-700">SS: {row.ss_qty}, F&B: {row.fb_qty}</p>
@@ -501,42 +568,6 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                 ))}
                 {rows.length === 0 && <p className="text-center text-gray-500 py-8">No jobs added for this day.</p>}
             </div>
-
-
-            {/* Actions */}
-             <div className="mt-6">
-                {/* Desktop Actions */}
-                <div className="hidden md:flex bg-white p-4 rounded-lg shadow-lg justify-between items-center gap-4">
-                    <button onClick={addRow} className="px-6 py-3 text-lg font-medium text-brand-orange border-2 border-brand-orange rounded-md hover:bg-orange-50">
-                        + Add Row
-                    </button>
-                    <div className="flex gap-4">
-                        <button onClick={() => handleExport('pdf')} className="px-6 py-3 text-lg font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Export as PDF</button>
-                        <button onClick={() => handleExport('csv')} className="px-6 py-3 text-lg font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Export as CSV</button>
-                        <button onClick={handleSave} className="px-10 py-3 text-lg font-bold text-white bg-brand-orange rounded-md hover:bg-opacity-90 shadow-lg">
-                            Save Day
-                        </button>
-                    </div>
-                </div>
-
-                {/* Mobile Sticky Footer Actions */}
-                <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white p-2 border-t border-gray-200 shadow-lg grid grid-cols-2 gap-2 z-20">
-                    <button onClick={() => handleExport('pdf')} className="w-full px-4 py-3 text-md font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Export PDF</button>
-                    <button onClick={() => handleExport('csv')} className="w-full px-4 py-3 text-md font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Export CSV</button>
-                    <button onClick={handleSave} className="col-span-2 w-full px-10 py-3 text-lg font-bold text-white bg-brand-orange rounded-md hover:bg-opacity-90 shadow-lg">
-                        Save Day
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Floating Action Button */}
-            <button
-                onClick={handleOpenAddModal}
-                className="md:hidden fixed bottom-36 right-4 bg-brand-orange text-white rounded-full p-0 w-16 h-16 shadow-lg z-30 flex items-center justify-center text-4xl font-light"
-                aria-label="Add New Job"
-            >
-                +
-            </button>
             
             <Modal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} title="Quick Add Client">
                 <QuickClientForm onSave={handleQuickClientAdd} onCancel={() => setIsClientModalOpen(false)} />
@@ -552,7 +583,46 @@ const DailyEntryScreen: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                 clients={clients}
                 items={items}
                 userRole={userRole}
+                canDelete={!isDaySaved || userRole === 'Admin'}
+                isLocked={isLocked}
             />
+
+            {!isLocked && (
+                 <button
+                    onClick={handleOpenAddModal}
+                    className="md:hidden fixed bottom-20 right-5 bg-brand-orange text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg z-40 hover:bg-opacity-90 active:scale-95 transition-transform"
+                    aria-label="Add New Job"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+            )}
+
+            <Modal isOpen={isFinalizeModalOpen} onClose={() => setIsFinalizeModalOpen(false)} title="Day Finalized Successfully!">
+                <div className="text-center space-y-6">
+                    <p className="text-lg text-gray-700">
+                        The entry for {new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })} has been saved and locked.
+                    </p>
+                    <p className="text-lg text-gray-700">
+                        Would you like to proceed to the next day's entry?
+                    </p>
+                    <div className="flex justify-center space-x-4 pt-4">
+                        <button 
+                            type="button" 
+                            onClick={() => setIsFinalizeModalOpen(false)} 
+                            className="px-6 py-3 border border-gray-300 rounded-md shadow-sm text-lg font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                            Stay on This Page
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={handleGoToNextDay}
+                            className="px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90"
+                        >
+                            Go to Next Day
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
         </div>
     );

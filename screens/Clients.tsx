@@ -109,9 +109,8 @@ const ClientsScreen: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-4xl font-bold text-brand-blue">Clients</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg shadow-lg">
         <div className="flex items-center gap-4 w-full md:w-auto">
           <input
             type="text"
@@ -120,14 +119,14 @@ const ClientsScreen: React.FC = () => {
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full md:w-80 px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-orange focus:border-brand-orange text-lg"
           />
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange whitespace-nowrap"
-          >
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Add Client
-          </button>
         </div>
+        <button
+          onClick={() => handleOpenModal()}
+          className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-brand-orange hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange whitespace-nowrap"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add Client
+        </button>
       </div>
 
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
